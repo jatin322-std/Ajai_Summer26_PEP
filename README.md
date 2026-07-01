@@ -20,6 +20,7 @@ Each file is **one topic**. Open them in this order. Don't rush. One topic per d
 | 4 | `04-Binary-Search.md` | Lightning-fast search on sorted arrays |
 | 5 | `05-Strings.md` | Reverse, palindrome, anagram, frequency count |
 | 6 | `06-Recursion.md` | Down vs up, leap of faith, factorial, fibonacci, 8 worked problems |
+| 7 | `07-Hashing.md` | HashSet vs HashMap, Two Sum, frequency counting, 6 worked problems |
 
 > 📌 *Sorting will be added soon as its own file — leaving a clear spot for it once it's taught.*
 

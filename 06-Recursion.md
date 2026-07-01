@@ -1,4 +1,4 @@
-# 🔁 07 — Recursion
+# 🔁 06 — Recursion
 
 > 🪞 **Explain Like I'm 5:** Stand between two mirrors facing each other. You see yourself, inside a smaller you, inside a smaller you… forever. Each reflection is the *same picture, just smaller.* That's recursion — **a function that calls a smaller copy of itself.**
 >
