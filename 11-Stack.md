@@ -664,7 +664,521 @@ Applications:
 
 ---
 
+# 🟡 DAY 2 — MONOTONIC STACK + ADVANCED APPLICATIONS
+
+> 💡 **Quick revision first:** Stack = LIFO. Push, Pop, Peek, isEmpty. Got it? Good — now let's learn the pattern interviewers love most.
+
+> 🎯 **Two questions to warm up:**
+> - Can a **queue** solve the browser back-button? (No — back button needs "most recent page," which is LIFO, not FIFO.)
+> - Can a plain **array** find the nearest greater element efficiently? (Only in O(n²) — checking right of every element. Today's trick gets it to O(n).)
+
+## What is a Monotonic Stack?
+
+> 🪜 **Explain Like I'm 5:** A **monotonic stack** is a stack that's always sorted — either always increasing from bottom to top, or always decreasing. Before pushing a new item, you **kick out** anything on top that breaks the order.
+>
+> This one trick is asked at Amazon, Google, Microsoft, Adobe — it's one of the highest-value patterns you'll learn.
+
+---
+
+## Problem 1 — Next Greater Element (GFG) ⭐⭐
+
+> **Story:** For every element, find the first bigger element to its right.
+> `[1, 3, 2, 4]` → `[3, 4, 4, -1]`
+> (1's next bigger is 3. 3's next bigger is 4. 2's next bigger is 4. 4 has nothing bigger → -1.)
+
+> **Brute force:** for each element, scan everything to its right. O(n²) — slow.
+> **Optimal idea:** walk from the **right side**, keep a **decreasing stack**. While the stack's top is `≤` current element, pop it (it can never be *anyone's* answer once something bigger shows up). Whatever's left on top IS the answer for the current element. Then push current.
+
+**Dry run — `[1, 3, 2, 4]`, walking right to left:**
+
+```
+i=3 (val=4): stack empty → ans[3]=-1        push 4        stack: [4]
+i=2 (val=2): top=4 > 2, keep it → ans[2]=4  push 2        stack: [4,2]
+i=1 (val=3): top=2<=3, pop. top=4>3 → ans[1]=4  push 3    stack: [4,3]
+i=0 (val=1): top=3>1 → ans[0]=3             push 1        stack: [4,3,1]
+
+Answer: [3, 4, 4, -1]  ✅
+```
+
+<details>
+<summary>☕ Java</summary>
+
+```java
+static int[] nextGreater(int[] arr) {
+    int n = arr.length;
+    int[] ans = new int[n];
+    Stack<Integer> st = new Stack<>();
+
+    for (int i = n - 1; i >= 0; i--) {
+        while (!st.isEmpty() && st.peek() <= arr[i])
+            st.pop();                          // can't be anyone's answer anymore
+        ans[i] = st.isEmpty() ? -1 : st.peek(); // whatever survives is the answer
+        st.push(arr[i]);
+    }
+    return ans;
+}
+```
+</details>
+
+<details>
+<summary>🐍 Python</summary>
+
+```python
+def nextGreater(arr):
+    n = len(arr)
+    ans = [-1] * n
+    st = []
+
+    for i in range(n - 1, -1, -1):
+        while st and st[-1] <= arr[i]:
+            st.pop()                          # can't be anyone's answer anymore
+        if st:
+            ans[i] = st[-1]                   # whatever survives is the answer
+        st.append(arr[i])
+    return ans
+```
+</details>
+
+<details>
+<summary>⚡ C++</summary>
+
+```cpp
+vector<int> nextGreater(vector<int>& arr) {
+    int n = arr.size();
+    vector<int> ans(n);
+    stack<int> st;
+
+    for (int i = n - 1; i >= 0; i--) {
+        while (!st.empty() && st.top() <= arr[i])
+            st.pop();                         // can't be anyone's answer anymore
+        ans[i] = st.empty() ? -1 : st.top();   // whatever survives is the answer
+        st.push(arr[i]);
+    }
+    return ans;
+}
+```
+</details>
+
+> 🔑 **Why right-to-left?** Because "next greater" looks *forward*. Walking backward means by the time we reach element `i`, the stack already holds the *processed candidates to its right* — exactly what we need to check.
+
+> ⏱️ Time O(n) — each element is pushed & popped at most once · Space O(n)
+
+---
+
+## Problem 2 — Next Greater Element I `(LC 496)`
+
+> **Pattern: precompute NGE for one array using the stack trick, store answers in a HashMap, then look up answers for a second array.**
+> `nums1` is a subset of `nums2` — find each `nums1[i]`'s next greater element *within nums2*.
+
+<details>
+<summary>☕ Java</summary>
+
+```java
+public int[] nextGreaterElement(int[] nums1, int[] nums2) {
+    HashMap<Integer, Integer> map = new HashMap<>();
+    Stack<Integer> st = new Stack<>();
+
+    for (int i = nums2.length - 1; i >= 0; i--) {
+        while (!st.isEmpty() && st.peek() < nums2[i])
+            st.pop();
+        map.put(nums2[i], st.isEmpty() ? -1 : st.peek());  // store the answer
+        st.push(nums2[i]);
+    }
+
+    int[] ans = new int[nums1.length];
+    for (int i = 0; i < nums1.length; i++)
+        ans[i] = map.get(nums1[i]);            // just look it up!
+    return ans;
+}
+```
+</details>
+
+<details>
+<summary>🐍 Python</summary>
+
+```python
+def nextGreaterElement(self, nums1, nums2):
+    mp = {}
+    st = []
+
+    for i in range(len(nums2) - 1, -1, -1):
+        while st and st[-1] < nums2[i]:
+            st.pop()
+        mp[nums2[i]] = st[-1] if st else -1     # store the answer
+        st.append(nums2[i])
+
+    return [mp[x] for x in nums1]               # just look it up!
+```
+</details>
+
+<details>
+<summary>⚡ C++</summary>
+
+```cpp
+vector<int> nextGreaterElement(vector<int>& nums1, vector<int>& nums2) {
+    unordered_map<int,int> mp;
+    stack<int> st;
+
+    for (int i = nums2.size() - 1; i >= 0; i--) {
+        while (!st.empty() && st.top() < nums2[i])
+            st.pop();
+        mp[nums2[i]] = st.empty() ? -1 : st.top();   // store the answer
+        st.push(nums2[i]);
+    }
+
+    vector<int> ans;
+    for (int x : nums1) ans.push_back(mp[x]);   // just look it up!
+    return ans;
+}
+```
+</details>
+
+> 🧠 **This is literally Problem 1 + a HashMap on top.** Once you see the NGE skeleton, this is a two-line addition.
+
+> ⏱️ Time O(n + m) · Space O(n)
+
+---
+
+## Problem 3 — Daily Temperatures `(LC 739)`
+
+> **Story:** For every day, how many days until a warmer temperature?
+> `[73,74,75,71,69,72,76,73]` → `[1,1,4,2,1,1,0,0]`
+> **Pattern: Next Greater Element, but on INDEX instead of value.**
+
+<details>
+<summary>☕ Java</summary>
+
+```java
+public int[] dailyTemperatures(int[] temp) {
+    int n = temp.length;
+    int[] ans = new int[n];
+    Stack<Integer> st = new Stack<>();   // stores INDICES this time
+
+    for (int i = n - 1; i >= 0; i--) {
+        while (!st.isEmpty() && temp[st.peek()] <= temp[i])
+            st.pop();
+        ans[i] = st.isEmpty() ? 0 : st.peek() - i;  // distance, not value
+        st.push(i);
+    }
+    return ans;
+}
+```
+</details>
+
+<details>
+<summary>🐍 Python</summary>
+
+```python
+def dailyTemperatures(self, temp):
+    n = len(temp)
+    ans = [0] * n
+    st = []                               # stores INDICES this time
+
+    for i in range(n - 1, -1, -1):
+        while st and temp[st[-1]] <= temp[i]:
+            st.pop()
+        ans[i] = 0 if not st else st[-1] - i  # distance, not value
+        st.append(i)
+    return ans
+```
+</details>
+
+<details>
+<summary>⚡ C++</summary>
+
+```cpp
+vector<int> dailyTemperatures(vector<int>& temp) {
+    int n = temp.size();
+    vector<int> ans(n);
+    stack<int> st;                        // stores INDICES this time
+
+    for (int i = n - 1; i >= 0; i--) {
+        while (!st.empty() && temp[st.top()] <= temp[i])
+            st.pop();
+        ans[i] = st.empty() ? 0 : st.top() - i;  // distance, not value
+        st.push(i);
+    }
+    return ans;
+}
+```
+</details>
+
+> 🔑 **The upgrade:** push the **index**, not the value. That way you can compute *distance* (`st.peek() - i`) instead of just knowing *what* the next greater value is.
+
+> ⏱️ Time O(n) · Space O(n)
+
+---
+
+## Problem 4 — Online Stock Span `(LC 901)`
+
+> **Story:** Today's stock price arrives. How many consecutive days (ending today) had price `≤` today's price?
+> **Pattern: monotonic decreasing stack, but storing (price, span) pairs — and absorbing spans as you pop.**
+
+<details>
+<summary>☕ Java</summary>
+
+```java
+class StockSpanner {
+    Stack<int[]> st;   // each entry: {price, span}
+
+    public StockSpanner() {
+        st = new Stack<>();
+    }
+
+    public int next(int price) {
+        int span = 1;
+        while (!st.isEmpty() && st.peek()[0] <= price) {
+            span += st.pop()[1];             // absorb the smaller day's span
+        }
+        st.push(new int[]{price, span});
+        return span;
+    }
+}
+```
+</details>
+
+<details>
+<summary>🐍 Python</summary>
+
+```python
+class StockSpanner:
+    def __init__(self):
+        self.st = []          # each entry: (price, span)
+
+    def next(self, price):
+        span = 1
+        while self.st and self.st[-1][0] <= price:
+            span += self.st.pop()[1]         # absorb the smaller day's span
+        self.st.append((price, span))
+        return span
+```
+</details>
+
+<details>
+<summary>⚡ C++</summary>
+
+```cpp
+class StockSpanner {
+public:
+    stack<pair<int,int>> st;   // each entry: {price, span}
+
+    int next(int price) {
+        int span = 1;
+        while (!st.empty() && st.top().first <= price) {
+            span += st.top().second;         // absorb the smaller day's span
+            st.pop();
+        }
+        st.push({price, span});
+        return span;
+    }
+};
+```
+</details>
+
+> 🧠 **Why this works:** if today's price beats yesterday's, today "swallows" yesterday's entire span (and everything yesterday had already swallowed) — because all of those days are also `≤` today's price.
+
+> ⏱️ Time O(1) amortized · Space O(n)
+
+---
+
+## Problem 5 — Min Stack `(LC 155)` ⭐
+
+> **Interview question: can we get the minimum element in O(1)?**
+> **Answer: keep a SECOND stack that tracks the minimum at every point in time.**
+
+<details>
+<summary>☕ Java</summary>
+
+```java
+class MinStack {
+    Stack<Integer> st;
+    Stack<Integer> minSt;
+
+    public MinStack() {
+        st = new Stack<>();
+        minSt = new Stack<>();
+    }
+
+    public void push(int val) {
+        st.push(val);
+        if (minSt.isEmpty() || val <= minSt.peek())
+            minSt.push(val);                 // new minimum (or ties)
+    }
+
+    public void pop() {
+        if (st.peek().equals(minSt.peek()))
+            minSt.pop();                     // the min is leaving too
+        st.pop();
+    }
+
+    public int top() { return st.peek(); }
+    public int getMin() { return minSt.peek(); }   // O(1)!
+}
+```
+</details>
+
+<details>
+<summary>🐍 Python</summary>
+
+```python
+class MinStack:
+    def __init__(self):
+        self.st = []
+        self.mn = []
+
+    def push(self, val):
+        self.st.append(val)
+        if not self.mn or val <= self.mn[-1]:
+            self.mn.append(val)              # new minimum (or ties)
+
+    def pop(self):
+        if self.st[-1] == self.mn[-1]:
+            self.mn.pop()                    # the min is leaving too
+        self.st.pop()
+
+    def top(self):
+        return self.st[-1]
+
+    def getMin(self):
+        return self.mn[-1]                   # O(1)!
+```
+</details>
+
+<details>
+<summary>⚡ C++</summary>
+
+```cpp
+class MinStack {
+    stack<int> st;
+    stack<int> mn;
+public:
+    void push(int val) {
+        st.push(val);
+        if (mn.empty() || val <= mn.top())
+            mn.push(val);                    // new minimum (or ties)
+    }
+    void pop() {
+        if (st.top() == mn.top())
+            mn.pop();                        // the min is leaving too
+        st.pop();
+    }
+    int top() { return st.top(); }
+    int getMin() { return mn.top(); }        // O(1)!
+};
+```
+</details>
+
+> 🔑 **Why `<=` and not `<`?** If you push a duplicate minimum, you need to push it onto `minSt` too — otherwise, when one copy pops, `minSt` would lose track of the other copy still in `st`.
+
+> ⏱️ All operations: Time O(1) · Space O(n)
+
+---
+
+## Problem 6 — Evaluate Reverse Polish Notation `(LC 150)`
+
+> **Postfix math expressions** — operators come *after* their operands.
+> `["2","1","+","3","*"]` → `2+1=3`, then `3*3=9` → answer `9`
+> **Pattern: number → push. Operator → pop 2, calculate, push the result.**
+
+<details>
+<summary>☕ Java</summary>
+
+```java
+public int evalRPN(String[] tokens) {
+    Stack<Integer> st = new Stack<>();
+    for (String s : tokens) {
+        if ("+-*/".contains(s) && s.length() == 1) {
+            int b = st.pop();                // second operand comes off first
+            int a = st.pop();
+            switch (s) {
+                case "+": st.push(a + b); break;
+                case "-": st.push(a - b); break;
+                case "*": st.push(a * b); break;
+                case "/": st.push(a / b); break;
+            }
+        } else {
+            st.push(Integer.parseInt(s));    // it's a number → push
+        }
+    }
+    return st.peek();
+}
+```
+</details>
+
+<details>
+<summary>🐍 Python</summary>
+
+```python
+def evalRPN(self, tokens):
+    st = []
+    for s in tokens:
+        if s in "+-*/" and len(s) == 1:
+            b = st.pop()                     # second operand comes off first
+            a = st.pop()
+            if s == "+": st.append(a + b)
+            elif s == "-": st.append(a - b)
+            elif s == "*": st.append(a * b)
+            else: st.append(int(a / b))
+        else:
+            st.append(int(s))                # it's a number → push
+    return st[-1]
+```
+</details>
+
+<details>
+<summary>⚡ C++</summary>
+
+```cpp
+int evalRPN(vector<string>& tokens) {
+    stack<int> st;
+    for (string s : tokens) {
+        if (s == "+" || s == "-" || s == "*" || s == "/") {
+            int b = st.top(); st.pop();      // second operand comes off first
+            int a = st.top(); st.pop();
+            if (s == "+") st.push(a + b);
+            else if (s == "-") st.push(a - b);
+            else if (s == "*") st.push(a * b);
+            else st.push(a / b);
+        } else {
+            st.push(stoi(s));                // it's a number → push
+        }
+    }
+    return st.top();
+}
+```
+</details>
+
+> ⚠️ **Order matters:** `b` pops first (it's the *second* operand), then `a`. For `-` and `/`, `a - b` and `a / b` — swapping the order gives the wrong answer.
+
+> ⏱️ Time O(n) · Space O(n)
+
+---
+
+## 🧠 End of Day 2 Summary
+
+```
+Monotonic Stack Problems:
+  GFG Next Greater Element  →  decreasing stack, pop while top <= current
+  LC 496  NGE I              →  same trick + HashMap lookup
+  LC 739  Daily Temperatures →  same trick, but stack holds INDICES
+  LC 901  Online Stock Span  →  decreasing stack + absorb spans
+
+Design Problems:
+  LC 155  Min Stack          →  a second stack tracks the minimum
+
+Expression Evaluation:
+  LC 150  Evaluate RPN       →  number push, operator pop-2-calculate-push
+```
+
+> 🎓 **Interview patterns learned today:** Monotonic Increasing Stack · Monotonic Decreasing Stack · Index-Based Stack · Pair-Based Stack · Two-Stack Design · Expression Evaluation.
+>
+> ⭐ These six patterns show up constantly — Amazon, Google, Microsoft, Adobe all love this family. Master these six problems and you'll recognize the pattern instantly on new ones.
+
+---
+
 # 🎯 Practice
+
+**Day 1 — Fundamentals + Bracket Matching:**
 
 | Problem | Difficulty | Link | Key Idea |
 |---------|-----------|------|----------|
@@ -672,4 +1186,17 @@ Applications:
 | Minimum Add to Make Parentheses Valid | Medium | https://leetcode.com/problems/minimum-add-to-make-parentheses-valid/ | Count unmatched (no stack object needed) |
 | Minimum Remove to Make Valid Parentheses | Medium | https://leetcode.com/problems/minimum-remove-to-make-valid-parentheses/ | Push indices, remove what's unmatched |
 
-> 💡 **Do them in this order — LC 20 first.** Once matching brackets clicks, 921 and 1249 are small twists on the same idea, not new mountains. I'm right here for any doubt. 💪 — *Ajai Raj (Mentor)*
+**Day 2 — Monotonic Stack + Advanced:**
+
+| Problem | Difficulty | Link | Key Idea |
+|---------|-----------|------|----------|
+| Next Greater Element | Medium | https://www.geeksforgeeks.org/problems/next-larger-element-1587115620/1 | Decreasing stack, right to left |
+| Next Greater Element I | Easy | https://leetcode.com/problems/next-greater-element-i/ | NGE trick + HashMap lookup |
+| Daily Temperatures | Medium | https://leetcode.com/problems/daily-temperatures/ | NGE trick, stack holds indices |
+| Online Stock Span | Medium | https://leetcode.com/problems/online-stock-span/ | Decreasing stack + absorb spans |
+| Min Stack | Medium | https://leetcode.com/problems/min-stack/ | Second stack tracks the minimum |
+| Evaluate Reverse Polish Notation | Medium | https://leetcode.com/problems/evaluate-reverse-polish-notation/ | Number→push, operator→pop 2, calculate |
+
+**Coming next (Day 3 preview):** Largest Rectangle in Histogram (LC 84), Asteroid Collision (LC 735), Decode String (LC 394) — all build on today's monotonic stack pattern.
+
+> 💡 **Do Day 1 first, then Day 2 top to bottom.** The monotonic stack trick (Problem 1) is the engine behind Problems 2, 3, and 4 — nail that one and the rest fall into place. I'm right here for any doubt. 💪 — *Ajai Raj (Mentor)*
